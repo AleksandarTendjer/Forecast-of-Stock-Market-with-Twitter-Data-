@@ -20,6 +20,11 @@ from langdetect import detect
 from nltk.stem import SnowballStemmer
 from sklearn.feature_extraction.text import CountVectorizer
 from gensim.models import Word2Vec
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
 import csv
 
 
@@ -114,6 +119,46 @@ dowJonesCompanies=[
 'Walgreens Boots',
 'Pfizer']
 
+
+def rf_model(data):
+    # Splitting into Train and Test sets
+    split = int(0.7 * len(data))
+
+    y = appl_trend["Trend"].values.reshape(-1, 1)
+    
+    X_train = data[: split]
+    X_test = data[split:]
+
+    y_train = y[: split]
+    y_test = y[split:]
+    # Using StandardScaler to scale features data
+    scaler = StandardScaler()
+    X_scaler = scaler.fit(X_train)
+    X_train_scaled = X_scaler.transform(X_train)
+    X_test_scaled = X_scaler.transform(X_test)
+
+    # Create RFClassifier model
+    rf_model = RandomForestClassifier(n_estimators=500, random_state=78)
+
+    # Fit the model
+    rf_model = rf_model.fit(X_train_scaled, y_train.ravel())
+    # Make predictions
+    predictions = rf_model.predict(X_test_scaled)
+    pd.DataFrame({"Prediction": predictions, "Actual": y_test.ravel()}).head(20)
+
+    # Generate accuracy score for predictions using y_test
+    acc_score = accuracy_score(y_test, predictions)
+    print(f"Accuracy Score : {acc_score}")
+  #  Model Evaluation
+    # Generating the confusion matrix
+    cm = confusion_matrix(y_test, predictions)
+    cm_df = pd.DataFrame(
+        cm, index=["Actual 0", "Actual 1"],
+        columns=["Predicted 0", "Predicted 1"]
+    )
+
+    # Displaying results
+    display(cm_df)
 def data_collection_and_analysis(company):
     ###########1. Data Collection###############
     #
@@ -133,9 +178,7 @@ def data_collection_and_analysis(company):
     if exists==False:
         exit(1)
     with io.open('tweets_file_'+company+'.csv', mode='r', encoding="utf-8") as tweets_file:
-        tweets_reader= csv.reader(tweets_file, delimiter=',' lineterminator = '\n')
-        for row in tweets_reader:
-            print(row[1])
+        tweets_reader= csv.reader(tweets_file, delimiter=',')
         for row in tweets_reader:
             no_of_tweets+=1
             print(row[0])
@@ -323,6 +366,7 @@ def data_collection_and_analysis(company):
         word2vec = Word2Vec(t, min_count=2)
         vocabulary = list(word2vec.wv.index_to_key)
         print(vocabulary)
+    
 if __name__ == '__main__':
     if len(sys.argv)==2:
         for comp in dowJonesCompanies:
