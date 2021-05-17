@@ -12,6 +12,14 @@ import string
 
 import csv
 
+from datetime import datetime
+from datetime import timedelta
+
+import time
+
+def sleep_minutes(minutes):
+    time.sleep(minutes * 60)
+
 dowJonesCompanies=[
 'Apple' 
 'UnitedHealth Group',
@@ -45,10 +53,10 @@ dowJonesCompanies=[
 'Pfizer']
 def scrape(company):
     # Authentication
-    consumerKey = "Ka4T1VIYtEd2KybcO8vfH1bQY"
-    consumerSecret = "b40HTUn9U4uqfp58nsYQnw0iZLyLj6Pt1bE0drrKzcTZ42GtOp"
-    accessToken = "1280967822739464193-cpMnejPoX7ZNJFbLUVRpCqE1pv5TlO"
-    accessTokenSecret = "fIwsmzBMkOB1pLEYQGCglVvLMPGPHUM3zMj5yNP12TtHI"
+    consumerKey = "vc6hkKHFPxzbbS3KTlffDCoCU"
+    consumerSecret = "uM4VwTdl4pTthJyPnPdteCiuRzWKEMxSfqxuLf6SYMmlrNeEnv"
+    accessToken = "1280967822739464193-cnAPJWOW98OcnpeJc9QUAb060ALPmm"
+    accessTokenSecret = "W8HcQm4cDw3d8IYJ7Iebq9dEeNFZA1eIKxiPS93kP5RQf"
     auth = tweepy.OAuthHandler(consumerKey, consumerSecret)
     auth.set_access_token(accessToken, accessTokenSecret)
     api = tweepy.API(auth, wait_on_rate_limit=True)
@@ -58,17 +66,35 @@ def scrape(company):
     #keyword = input("Please enter keyword or hashtag to search: ")
     keyword =company
     #noOfTweet = int(input("Please enter how many tweets to analyze: "))
-    noOfTweet = 500
-    tweets = tweepy.Cursor(api.search, q=keyword).items(noOfTweet)
+    noOfTweet = 100
+   
+    day_before_date = "2021-05-01"
+    stop_date="2021-05-18"
+    start = datetime.strptime(day_before_date, "%Y-%m-%d")
+    day_after = datetime.strptime(day_before_date, "%Y-%m-%d") + timedelta(days=1)   # increase day one by one
+    stop = datetime.strptime(stop_date, "%Y-%m-%d")
+    i=0
+    while start < stop:
+        start = start + timedelta(days=1)  # increase day one by one
+        day_after = start + timedelta(days=1)  # increase day one by one
+        str_start=str(start.year)+'-'+str(start.month)+'-'+str(start.day)
+        str_after=str(day_after.year)+'-'+str(day_after.month)+'-'+str(day_after.day)
 
-    tweets_writer=None
-    with io.open('tweets_file_'+company+'.csv','a+', encoding="utf-8") as tweets_file:
-        tweets_writer = csv.writer(tweets_file, delimiter=',', lineterminator = '\n')
-        tweets_writer.writerow(["Text:"])
-        if tweets_writer:
-            for tweet in tweets:
-                tweets_writer.writerow([tweet.text])
-        tweets_file.close()
+        tweets = tweepy.Cursor(api.search, q=keyword,since=str_start,until=str_after).items(noOfTweet)
+        
+        i+=1
+        tweets_writer=None
+        with io.open('tweets_file_'+company+'_'+str(start.month)+'_'+str(start.day)+'.csv','a+', encoding="utf-8") as tweets_file:
+            tweets_writer = csv.writer(tweets_file, delimiter=',', lineterminator = '\n')
+            tweets_writer.writerow(["Text:"])
+            print(tweets_writer)
+            if tweets_writer:
+                for tweet in tweets:
+                    tweets_writer.writerow([tweet.text])
+            tweets_file.close()
+        print("done"+str(i)+"times")
+        # sleep 15 minutes to download more data from twitter
+        sleep_minutes(15)
 if __name__ == '__main__':
     if len(sys.argv)==2:
         for comp in dowJonesCompanies:
