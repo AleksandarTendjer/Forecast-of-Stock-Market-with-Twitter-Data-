@@ -24,7 +24,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score, classification_rep
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-
+import pandas
 import csv
 
 
@@ -124,7 +124,7 @@ def rf_model(data):
     # Splitting into Train and Test sets
     split = int(0.7 * len(data))
 
-    y = appl_trend["Trend"].values.reshape(-1, 1)
+    y = data["Trend"].values.reshape(-1, 1)
     
     X_train = data[: split]
     X_test = data[split:]
@@ -159,9 +159,24 @@ def rf_model(data):
 
     # Displaying results
     display(cm_df)
+def stocks_data_preprocess():
+        diff=[]
+        exists=os.path.isfile('StockMSFT.csv')
+        if exists:
+            stocks_df = pandas.read_csv('StockMSFT.csv')
+            print(stocks_df)
+            # Using 'Address' as the column name
+            # and equating it to the list
+            stocks_df['diff'] = stocks_df['Adj_Close'].diff()
+            stocks_df['Trend'] =  np.where(stocks_df['diff']>0, 1,0)
+            print(stocks_df)
+            return diff
+
+
+
 def data_collection_and_analysis(company):
     ###########1. Data Collection###############
-    #
+    
     #keyword = input("Please enter keyword or hashtag to search: ")
     keyword=company
     #noOfTweet = int(input("Please enter how many tweets to analyze: "))
@@ -173,6 +188,9 @@ def data_collection_and_analysis(company):
     neutral_list = []
     negative_list = []
     positive_list = []
+    volume=[]
+    adj_close=[]
+
     no_of_tweets=0
     exists=os.path.isfile('./'+'tweets_file_'+company+'.csv')
     if exists==False:
@@ -366,7 +384,20 @@ def data_collection_and_analysis(company):
         word2vec = Word2Vec(t, min_count=2)
         vocabulary = list(word2vec.wv.index_to_key)
         print(vocabulary)
+        # intialise data of lists.
     
+    stocks_data=stocks_data_preprocess()
+    processing_data=pd.DataFrame()
+    processing_data['text']=tw_list["text"]
+    processing_data['sentiment']=tw_list["sentiment"]
+    processing_data['Adj_Close']=stocks_data['Adj_Close']
+    processing_data['diff']=stocks_data['diff']
+    processing_data['Trend']=stocks_data['Trend']
+    rf_model(processing_data)
+    
+   # data = {'Adj_close': adj_close,	'Volume': volume, 'twitter_volume': twitter_volume, 'sentiment':  sentiment}
+   # df_data=pd.DataFrame()
+
 if __name__ == '__main__':
     if len(sys.argv)==2:
         for comp in dowJonesCompanies:
